@@ -4,35 +4,49 @@
 namespace infini {
 ConcatObj::ConcatObj(GraphObj *graph, TensorVec inputs, Tensor output, int _dim)
     : OperatorObj(OpType::Concat, inputs, {output}) {
-    int rank = inputs[0]->getRank();
-    dim = get_real_axis(_dim, rank);
-    IT_ASSERT(checkValid(graph));
+  int rank = inputs[0]->getRank();
+  dim = get_real_axis(_dim, rank);
+  IT_ASSERT(checkValid(graph));
 }
 
 optional<vector<Shape>> ConcatObj::inferShape(const TensorVec &inputs) {
-    Shape dims = inputs[0]->getDims();
-    auto rank = inputs[0]->getRank();
+  Shape dims = inputs[0]->getDims();
+  auto rank = inputs[0]->getRank();
 
-    // =================================== 作业 ===================================
-    // TODO：修改 dims，返回正确的 concat 后的 shape
-    // REF: https://onnx.ai/onnx/operators/onnx__Concat.html#concat-13
-    // =================================== 作业 ===================================
+  // =================================== 作业
+  // ===================================
+  // TODO：修改 dims，返回正确的 concat 后的 shape
+  // REF: https://onnx.ai/onnx/operators/onnx__Concat.html#concat-13
+  // =================================== 作业
+  // ===================================
+  for (size_t i = 1; i < inputs.size(); ++i) {
+    IT_ASSERT(inputs[i]->getRank() == rank,
+              "Concat requires all inputs to have the same rank");
+    const auto &otherDims = inputs[i]->getDims();
+    for (size_t d = 0; d < rank; ++d) {
+      if ((int)d == dim)
+        continue;
+      IT_ASSERT(otherDims[d] == dims[d],
+                "Concat requires matching dimensions on non-concat axes");
+    }
+    dims[dim] += otherDims[dim];
+  }
 
-    return {{dims}};
+  return {{dims}};
 }
 
 std::string ConcatObj::toString() const {
-    std::ostringstream os;
-    os << "Concat[" << getGuid() << "]";
-    os << "(";
-    for (auto input : inputs)
-        os << vecToString(input->getDims()) << ",";
-    os << "dim=" << dim << ",";
-    os << "input=";
-    for (auto input : inputs)
-        os << input->getGuid() << ",";
-    os << "output=" << outputs[0]->getGuid() << ")";
-    return os.str();
+  std::ostringstream os;
+  os << "Concat[" << getGuid() << "]";
+  os << "(";
+  for (auto input : inputs)
+    os << vecToString(input->getDims()) << ",";
+  os << "dim=" << dim << ",";
+  os << "input=";
+  for (auto input : inputs)
+    os << input->getGuid() << ",";
+  os << "output=" << outputs[0]->getGuid() << ")";
+  return os.str();
 }
 
 } // namespace infini
